@@ -49,7 +49,7 @@ This skill does not own:
    node apex/migrations/scripts/app-migration-precheck.mjs <apex_export_file_or_dir> --target-apex <target_apex>
    ```
 
-   Add optional target facts such as `--source-apex`, `--target-ords`, `--rest-enabled-schema`, `--workspace-match`, `--schema-match`, `--alias-match`, `--replace-existing`, and `--background-running` when known. Use this before `static-app-upgrade-scan.mjs` when the user asks whether an exported application can be migrated/imported into a target.
+   Add optional target facts such as `--source-apex`, `--target-ords`, `--rest-enabled-schema`, `--workspace-match`, `--schema-match`, `--alias-match`, `--replace-existing`, `--background-running`, `--export-type`, and `--fresh-install-app-migration` when known. Use this before `static-app-upgrade-scan.mjs` when the user asks whether an exported application can be migrated/imported into a target.
 4. Ask once for missing migration inputs:
    - source APEX version, target APEX version, database version/RU, ORDS version;
    - environment type: self-managed, co-managed Cloud, Autonomous AI Database, or APEX Service;
@@ -70,10 +70,13 @@ This skill does not own:
 ## Hard Gates
 
 - Use official Oracle APEX documentation as the authoritative source for current APEX upgrade requirements.
-- As of 2026-06-08, Oracle's public APEX documentation and download pages list APEX 26.1 as the current documented release.
+- As of 2026-06-11, Oracle's public APEX documentation and download pages list APEX 26.1 as the current documented release.
 - For APEX 26.1 planning, validate that the target database and ORDS versions meet the documented minimums before proposing an upgrade window.
 - Direct upgrade to APEX 26.1 is supported only from APEX 18.1 or later. For older releases, plan an intermediate upgrade to APEX 24.2 or a manual export/import migration to a new APEX 26.1 instance.
 - For APEX 18.1 or later to APEX 26.1, do not invent an intermediate APEX release unless another documented constraint requires it.
+- Keep instance-upgrade support and application portability separate. An unsupported direct instance upgrade can still have an application export/import migration path into a new target instance, but application-only migration does not retain workspace-level configuration.
+- For application migration exports, record the chosen export type. Full Export is the migration-oriented export for moving applications across environments, may include application data, and must not be treated as normal source-control content.
+- Treat YAML-style exports as legacy input. Prefer current SQL or APEXlang export formats for migration planning and import validation.
 - Do not provide runnable `SYS AS SYSDBA` install, upgrade, downgrade, or parameter-change commands as this skill's own execution path. Mark them as DBA/DB-skill work and require explicit user confirmation in the owning workflow.
 - Do not run APEX upgrade/import/install scripts automatically. Validation and planning may run, but upgrade execution must require explicit confirmation and the owning execution skill.
 - Do not alter APEX files that ship inside the Oracle Database home when the source APEX release came with the database.
@@ -87,7 +90,7 @@ This skill does not own:
 
 ## Documentation
 
-Use current official Oracle APEX documentation first. As of 2026-06-08, the current official public documentation checked for this skill is APEX 26.1.
+Use current official Oracle APEX documentation first. As of 2026-06-11, the current official public documentation checked for this skill is APEX 26.1.
 
 ```text
 https://docs.oracle.com/en/database/oracle/apex/26.1/htmig/upgrading-from-previous-apex-release.html
@@ -95,6 +98,8 @@ https://docs.oracle.com/en/database/oracle/apex/26.1/htmig/apex-installation-req
 https://docs.oracle.com/en/database/oracle/apex/26.1/htmig/maximizing-uptime-during-apex-upgrade.html
 https://docs.oracle.com/en/database/oracle/apex/26.1/htmdb/upgrading-apex-applications.html
 https://docs.oracle.com/en/database/oracle/apex/26.1/htmdb/importing-export-files.html
+https://blogs.oracle.com/apex/26-1-direct-instance-upgrades-now-require-apex-18-1-or-higher
+https://blogs.oracle.com/apex/apexlang-in-practice-export-edit-validate-and-import-oracle-apex-applications
 https://www.oracle.com/apex/
 https://www.oracle.com/tools/downloads/apex-downloads/
 ```

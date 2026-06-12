@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import process from 'node:process';
 
-const SUPPORT_MATRIX_AS_OF = '2026-06-08';
+const SUPPORT_MATRIX_AS_OF = '2026-06-11';
 const CURRENT_OFFICIAL_APEX_DOCS = '26.1';
 const SUPPORTED_APEX = new Map([
   ['26.1', { supportEnds: '2027-11', status: 'supported' }],
@@ -18,7 +18,7 @@ Usage:
 
 Options:
   --source <version>         Current APEX version, for example 18.1 or 24.2
-  --target <version>         Target APEX version, default 26.1, the current official Oracle docs baseline checked on 2026-06-08
+  --target <version>         Target APEX version, default 26.1, the current official Oracle docs baseline checked on 2026-06-11
   --db <version>             Target database/RU version, for example 19.18 or 23.26.0
   --ords <version>           Target ORDS version, for example 26.1.1
   --sga-mb <number>          Known SGA size in MB

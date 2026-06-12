@@ -2,7 +2,7 @@
 
 Use this reference for APEX release-upgrade readiness, especially APEX 26.1 target planning.
 
-As of 2026-06-08, Oracle's public APEX documentation and download pages list APEX 26.1 as the current documented release.
+As of 2026-06-11, Oracle's public APEX documentation and download pages list APEX 26.1 as the current documented release.
 
 ## Intake
 
@@ -37,6 +37,8 @@ Collect these facts before planning an upgrade:
 - If the current APEX release is older than 18.1, plan either:
   - upgrade first to APEX 24.2, then upgrade to APEX 26.1; or
   - manually export workspaces and applications, then import them into a new APEX 26.1 instance.
+- Keep the prior point scoped: the direct-upgrade limit applies to APEX instance upgrades. Application portability is different; application exports from older APEX releases can still be used for an application migration into a new APEX 26.1 instance.
+- If using fresh install plus application migration, record that the approach migrates applications only. Workspace-level configuration must be inventoried and recreated separately.
 - If planning a legacy 18.1 to 24.2 intermediate step, account for the documented 24.1-before-24.2 caution.
 - If APEX came with the database, do not alter APEX files inside the database Oracle home. Use the downloaded APEX release files from a separate writable directory.
 
@@ -92,9 +94,12 @@ It checks:
 
 - Export source release versus target APEX release. An application export from a newer APEX release must not be planned for import into an older target.
 - APEXlang import prerequisites when an APEXlang export is detected: target APEX 26.1-era support, ORDS 26.1.1 or later for App Builder import, and at least one REST-enabled target workspace schema.
+- Export type discipline: Standard Export is for day-to-day development and source control; Runtime Export is for runtime environments; Full Export is the cross-environment migration export and may include application data; Custom Export requires the selected options and flashback setting to be recorded.
 - Whether workspace, schema, and alias mappings require an installation-context plan when the target does not mirror the source.
+- Fresh-install application migration does not retain workspace-level configuration; require a separate workspace configuration inventory.
 - Page/component-export alignment risk, because those exports require tighter target application/workspace alignment than full application exports.
 - Credentials, remote servers, REST data sources, supporting objects, plug-ins, background process re-import risk, and legacy JavaScript as review gates rather than automatic blockers.
+- Legacy YAML-style export input should be treated as review-only. Prefer current SQL or APEXlang exports for migration planning and import validation.
 
 Use `scripts/static-app-upgrade-scan.mjs` after this eligibility check when the next question is regression scope rather than basic import eligibility.
 
@@ -103,5 +108,7 @@ Use `scripts/static-app-upgrade-scan.mjs` after this eligibility check when the 
 - Oracle APEX 26.1 upgrade guide: `https://docs.oracle.com/en/database/oracle/apex/26.1/htmig/upgrading-from-previous-apex-release.html`
 - Oracle APEX 26.1 requirements: `https://docs.oracle.com/en/database/oracle/apex/26.1/htmig/apex-installation-requirements.html`
 - Oracle APEX 26.1 import guide: `https://docs.oracle.com/en/database/oracle/apex/26.1/htmdb/importing-export-files.html`
+- Oracle APEX blog, direct instance upgrade limits and application migration: `https://blogs.oracle.com/apex/26-1-direct-instance-upgrades-now-require-apex-18-1-or-higher`
+- Oracle APEX blog, APEXlang export/import workflow and export types: `https://blogs.oracle.com/apex/apexlang-in-practice-export-edit-validate-and-import-oracle-apex-applications`
 - Oracle APEX 26.1 downloads: `https://www.oracle.com/tools/downloads/apex-downloads/`
 - Oracle APEX support status: `https://www.oracle.com/apex/`

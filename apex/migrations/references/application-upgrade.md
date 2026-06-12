@@ -21,13 +21,26 @@ Before planning an application import or workspace/application migration from an
 node apex/migrations/scripts/app-migration-precheck.mjs <apex_export_file_or_dir> --target-apex <target_apex>
 ```
 
-Use optional flags when facts are known: `--source-apex`, `--target-ords`, `--rest-enabled-schema`, `--workspace-match`, `--schema-match`, `--alias-match`, `--replace-existing`, and `--background-running`.
+Use optional flags when facts are known: `--source-apex`, `--target-ords`, `--rest-enabled-schema`, `--workspace-match`, `--schema-match`, `--alias-match`, `--replace-existing`, `--background-running`, `--export-type`, and `--fresh-install-app-migration`.
 
 Treat the verdict as:
 
 - `blocked`: do not plan the import until the blocker is resolved, for example an export from a newer APEX release into an older target.
 - `review`: migration may be possible, but target mapping, credentials, APEXlang prerequisites, supporting objects, plug-ins, or re-import state need explicit review.
 - `allowed`: static eligibility checks did not find a known blocker; still validate in the target APEX/SQLcl import workflow.
+
+## Export Type Standard
+
+Record the export type before migration planning:
+
+- Standard Export: day-to-day development and source-control review; excludes runtime data.
+- Runtime Export: runtime environments; sets the application build status to run-application-only and excludes development/audit/runtime data.
+- Full Export: cross-environment application migration; may include application data and must not be treated as normal source-control content.
+- Custom Export: advanced scenario; record selected granular options and any flashback setting.
+
+When the migration path is a fresh target instance plus application import, record that application migration does not retain workspace-level configuration. Plan a separate inventory and recreation step for workspace users, groups, schemas, credentials, service configuration, REST settings, and other workspace-level objects.
+
+Prefer current SQL or APEXlang export formats. Treat YAML-style exports as legacy review input, not the preferred migration artifact.
 
 ## Oracle-Recommended App Review Steps
 
@@ -69,3 +82,5 @@ Use `scripts/app-migration-precheck.mjs` before the static regression-risk scan 
 - Oracle APEX 26.1 application upgrade guide: `https://docs.oracle.com/en/database/oracle/apex/26.1/htmdb/upgrading-apex-applications.html`
 - Oracle APEX 26.1 import guide: `https://docs.oracle.com/en/database/oracle/apex/26.1/htmdb/importing-export-files.html`
 - Oracle APEX 26.1 upgrade guide: `https://docs.oracle.com/en/database/oracle/apex/26.1/htmig/upgrading-from-previous-apex-release.html`
+- Oracle APEX blog, direct instance upgrade limits and application migration: `https://blogs.oracle.com/apex/26-1-direct-instance-upgrades-now-require-apex-18-1-or-higher`
+- Oracle APEX blog, APEXlang export/import workflow and export types: `https://blogs.oracle.com/apex/apexlang-in-practice-export-edit-validate-and-import-oracle-apex-applications`

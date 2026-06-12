@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-const DOC_BASELINE_AS_OF = '2026-06-08';
+const DOC_BASELINE_AS_OF = '2026-06-11';
 const CURRENT_OFFICIAL_APEX = '26.1';
 const TEXT_EXTENSIONS = new Set(['.sql', '.apx', '.yaml', '.yml', '.json']);
 
@@ -24,6 +24,8 @@ Options:
   --alias-match <yes|no>           Target application alias can be reused without collision
   --replace-existing <yes|no>      This is a re-import replacing an existing application
   --background-running <yes|no>    Existing background executions are running or queued
+  --export-type <type>             Known export type: standard, runtime, full, or custom
+  --fresh-install-app-migration <yes|no> App-only migration into a newly installed target
   --json                          Print JSON instead of Markdown
 `;
   process.stdout.write(text.trimStart());
@@ -41,7 +43,9 @@ function parseArgs(argv) {
     '--schema-match',
     '--alias-match',
     '--replace-existing',
-    '--background-running'
+    '--background-running',
+    '--export-type',
+    '--fresh-install-app-migration'
   ]);
 
   for (let i = 2; i < argv.length; i += 1) {
@@ -95,6 +99,13 @@ function normalizeBool(input) {
   throw new Error(`Invalid yes/no value: ${input}`);
 }
 
+function normalizeChoice(input, name, allowed) {
+  if (input === undefined) return null;
+  const value = String(input).trim().toLowerCase();
+  if (allowed.includes(value)) return value;
+  throw new Error(`Invalid ${name}: ${input}. Expected one of: ${allowed.join(', ')}`);
+}
+
 function collectFiles(inputPath) {
   const stat = fs.statSync(inputPath);
   if (stat.isFile()) return [inputPath];
@@ -139,12 +150,14 @@ function mergeText(files) {
 }
 
 function detectExportKind(files, text) {
-  const hasApexlangExtension = files.some((file) => ['.yaml', '.yml', '.json'].includes(path.extname(file).toLowerCase()));
+  const hasApxExtension = files.some((file) => path.extname(file).toLowerCase() === '.apx');
+  const hasYamlExtension = files.some((file) => ['.yaml', '.yml'].includes(path.extname(file).toLowerCase()));
   const hasApexlangSignal = /\bAPEXlang\b|apex_application:|application:\s*\n\s*(id|name):/i.test(text);
   const hasSqlExportSignal = /wwv_flow_api\.import_begin|wwv_flow_api\.create_flow|prompt\s+--application\//i.test(text);
   const pageOnly = !/wwv_flow_api\.create_flow\s*\(/i.test(text) && /wwv_flow_api\.create_page\s*\(/i.test(text);
 
-  if (hasApexlangExtension || hasApexlangSignal) return pageOnly ? 'apexlang_or_page_export' : 'apexlang_application_export';
+  if (hasYamlExtension && !hasApxExtension) return 'deprecated_yaml_export';
+  if (hasApxExtension || hasApexlangSignal) return pageOnly ? 'apexlang_or_page_export' : 'apexlang_application_export';
   if (pageOnly) return 'sql_page_or_component_export';
   if (hasSqlExportSignal) return 'sql_application_export';
   return 'unknown_text_export';
@@ -173,6 +186,7 @@ function scan(text, files, args) {
     officialDocumentationRelease: CURRENT_OFFICIAL_APEX,
     filesScanned: files.length,
     exportKind: detectExportKind(files, text),
+    exportType: args['export-type'] || null,
     sourceApex: source ? source.raw : null,
     targetApex: target.raw,
     targetOrds: args['target-ords'] || null,
@@ -206,6 +220,9 @@ function evaluate(summary, args) {
   if (summary.exportKind === 'unknown_text_export') {
     gates.push(gate('review', 'export_type', 'No full application, page/component, SQL, or APEXlang export signature was detected. Confirm that the input is an APEX export.'));
   }
+  if (summary.exportKind === 'deprecated_yaml_export') {
+    gates.push(gate('review', 'export_format', 'YAML-style export input was detected. Use current SQL or APEXlang export format for migration planning and import validation.'));
+  }
 
   if (!source) {
     gates.push(gate('review', 'source_release', 'Source/export APEX release was not found in the files. Provide --source-apex or confirm in App Builder.'));
@@ -219,6 +236,22 @@ function evaluate(summary, args) {
     gates.push(gate('review', 'documentation_baseline', `Official Oracle documentation checked on ${DOC_BASELINE_AS_OF} lists ${CURRENT_OFFICIAL_APEX} as the current APEX documentation release. Re-check Oracle docs before relying on target ${target.raw} gates.`));
   } else {
     gates.push(gate('pass', 'documentation_baseline', `Target uses the current official Oracle APEX documentation baseline ${CURRENT_OFFICIAL_APEX} as checked on ${DOC_BASELINE_AS_OF}.`));
+  }
+
+  const exportType = normalizeChoice(args['export-type'], 'export-type', ['standard', 'runtime', 'full', 'custom']);
+  if (exportType === 'full') {
+    gates.push(gate('review', 'export_type_selection', 'Full export is intended for moving applications across environments and may include application data. Keep it out of source control and handle it as sensitive migration evidence.'));
+  } else if (exportType === 'runtime') {
+    gates.push(gate('review', 'export_type_selection', 'Runtime export targets runtime environments and excludes development/audit/runtime data. Confirm it matches the migration objective.'));
+  } else if (exportType === 'custom') {
+    gates.push(gate('review', 'export_type_selection', 'Custom export requires the selected granular options and flashback setting to be recorded with the migration evidence.'));
+  } else if (exportType === 'standard') {
+    gates.push(gate('pass', 'export_type_selection', 'Standard export is suitable for day-to-day development and source-control review, but it excludes runtime data.'));
+  }
+
+  const freshInstallAppMigration = normalizeBool(args['fresh-install-app-migration']);
+  if (freshInstallAppMigration === true) {
+    gates.push(gate('review', 'workspace_configuration', 'Fresh-install application migration moves applications only. Inventory and recreate required workspace-level configuration separately.'));
   }
 
   if (isApexlang) {
@@ -303,6 +336,7 @@ function printMarkdown(input, summary, evaluation) {
     `- Input: ${input}`,
     `- Files scanned: ${summary.filesScanned}`,
     `- Export kind: ${summary.exportKind}`,
+    `- Export type: ${summary.exportType || 'not provided'}`,
     `- Source/export APEX: ${summary.sourceApex || 'not found'}`,
     `- Target APEX: ${summary.targetApex}`,
     `- Verdict: ${evaluation.verdict}`,
