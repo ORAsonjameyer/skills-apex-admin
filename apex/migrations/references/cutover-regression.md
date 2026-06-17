@@ -1,13 +1,23 @@
 # Cutover, Regression, and Post-Upgrade
 
-Use this reference when turning a migration assessment into an execution plan or validation checklist.
+Use this reference when turning a migration assessment into a non-production execution plan, production-readiness handoff, or validation checklist.
+
+For full non-production execution orchestration or production-readiness planning, use this together with:
+
+- `execution-runbook.md` for non-production phase sequencing and owner handoffs.
+- `go-no-go.md` for cutover and acceptance decisions.
+- `rehearsal.md` for dry-run expectations.
+- `rollback-revert.md` for rollback/revert decision points.
+- `evidence-pack.md` for required proof before closeout.
+
+This skill must not coordinate production migration execution. For production, produce readiness, validation, rollback, and handoff materials only.
 
 ## Cutover Strategy
 
 Choose one of these strategies:
 
-- Standard one-step upgrade: DBA executes the documented `apexins.sql` or `apxrtins.sql` path through the owning DB/platform workflow.
-- Reduced-downtime upgrade: DBA executes the documented phased scripts in order. This is not supported when APEX is installed in `CDB$ROOT`.
+- Standard one-step upgrade: in non-production, DBA executes the documented `apexins.sql` or `apxrtins.sql` path through the owning DB/platform workflow. For production, provide the handoff plan only.
+- Reduced-downtime upgrade: in non-production, DBA executes the documented phased scripts in order. This is not supported when APEX is installed in `CDB$ROOT`. For production, provide the handoff plan only.
 - Export/import migration: use when upgrading from releases older than the supported direct-upgrade path, when moving between services, or when a clean target instance is preferred.
 
 For reduced-downtime upgrades, plan around the four phases:
@@ -55,8 +65,10 @@ Route application artifact changes, APEXlang generation, validation, or import t
 - Do not remove older APEX schemas immediately after the first successful upgrade.
 - Keep older APEX schemas for a few weeks after all environments are upgraded and stable, then remove them through the owning DB/platform workflow.
 - If the prior release used separate tablespaces, cleanup may include dropping those tablespaces only after explicit confirmation in the owning DB workflow.
-- Revert planning must be explicit before production cutover. Reverting can lose modifications made in the new APEX instance after upgrade.
+- Revert planning must be explicit before non-production execution or production handoff. Reverting can lose modifications made in the new APEX instance after upgrade.
 - Revert/downgrade scripts and public synonym/grant switching are DB/SYSDBA work, not migration-skill execution.
+- Use `rollback-revert.md` when the runbook needs explicit rollback triggers, owners, expected data/config loss, and post-rollback validation.
+- Use `evidence-pack.md` before declaring migration closeout.
 
 ## Sources
 

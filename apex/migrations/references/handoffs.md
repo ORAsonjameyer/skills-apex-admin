@@ -2,6 +2,10 @@
 
 Use this reference to avoid duplicating adjacent skills.
 
+During non-production execution orchestration, this skill owns the runbook and phase gates. The owning skill or human owner executes each state-changing step and returns evidence.
+
+For production, this skill owns planning and handoff packaging only. It must not coordinate live production execution.
+
 ## APEX Admin
 
 Route to `apex/admin/SKILL.md` for:
@@ -15,7 +19,7 @@ Route to `apex/admin/SKILL.md` for:
 Use this handoff text:
 
 ```text
-APEX admin skill in use: apex/admin/SKILL.md for APEX workspace, deployment, monitoring, or admin validation. The migrations skill is being used only for upgrade orchestration and migration planning.
+APEX admin skill in use: apex/admin/SKILL.md for APEX workspace, deployment, monitoring, or admin validation. The migrations skill is being used only for migration orchestration, runbook control, and planning.
 ```
 
 ## APEXlang
@@ -30,7 +34,7 @@ Route to `apex/apexlang/SKILL.md` for:
 Use this handoff text:
 
 ```text
-APEXlang skill in use: apex/apexlang/SKILL.md for APEX application artifacts. The migrations skill is being used only for migration readiness and upgrade planning.
+APEXlang skill in use: apex/apexlang/SKILL.md for APEX application artifacts. The migrations skill is being used only for migration readiness, runbook control, and upgrade planning.
 ```
 
 ## DB, ORDS, SQLcl, and Platform
@@ -45,11 +49,28 @@ Route out of this skill for:
 Use this handoff text:
 
 ```text
-DB/ORDS skill in use for database, ORDS, SQLcl, or SYSDBA execution. The migrations skill is being used only for APEX migration planning and validation routing.
+DB/ORDS skill in use for database, ORDS, SQLcl, or SYSDBA execution. The migrations skill is being used only for APEX migration planning, runbook control, and validation routing.
+```
+
+## Execution Handoff Record
+
+For non-production execution runbooks, require returned evidence in this shape:
+
+```text
+Owning workflow:
+Action executed:
+Environment:
+Started:
+Finished:
+Status: pass | review | blocked
+Evidence returned:
+Errors/deviations:
+Next requested migration step:
 ```
 
 ## Safety
 
 - Do not silently reuse an APEX admin connection for DB or ORDS work.
 - Do not place passwords in chat, scripts, MCP SQL calls, examples, or skill files.
-- Do not run state-changing migration execution automatically. Planning and validation may proceed; execution requires explicit user confirmation in the owning workflow.
+- Do not run state-changing migration execution automatically. Planning and validation may proceed; non-production execution requires explicit user confirmation in the owning workflow.
+- Do not coordinate production migration execution. Production work is planning, readiness, and handoff only.
